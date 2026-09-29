@@ -6,10 +6,10 @@
   "cloudflare": {
     "bindings": {
       "MMWX_ORIGIN": {
-        "description": "妙妙屋 X 主控的公网 HTTPS 地址，例如 `https://panel.example.com`。"
+        "description": "\u5999\u5999\u5c4b X \u4e3b\u63a7\u7684\u516c\u7f51 HTTPS \u5730\u5740\uff0c\u4f8b\u5982 `https://panel.example.com`\u3002"
       },
       "PROBE_TOKEN": {
-        "description": "在主控的 **系统设置 → 探针** 中生成的独立探针访问密钥。"
+        "description": "\u5728\u4e3b\u63a7\u7684 **\u7cfb\u7edf\u8bbe\u7f6e \u2192 \u63a2\u9488** \u4e2d\u751f\u6210\u7684\u72ec\u7acb\u63a2\u9488\u8bbf\u95ee\u5bc6\u94a5\u3002"
       }
     }
   },
@@ -46,5 +46,10 @@
     "@types/twemoji": "^13.1.1",
     "typescript": "~5.9.3",
     "wrangler": "^4.116.0"
+  },
+  "overrides": {
+    "postcss": {
+      "nanoid": "5.1.16"
+    }
   }
 }
