@@ -1359,15 +1359,18 @@ function PingPanel({
     pick: (kind: "latency" | "loss") => void,
   ) => (
     <div key={key} className="ping-row">
+      {/* 表头与色块条同一套两列:延迟在左列末端(延迟条上方)、丢包在右列末端(#1620) */}
       <div className="ping-row-head">
-        <span>{label}</span>
-        <strong>
-          {!cur
-            ? "—"
-            : cur.current_ms < 0
-              ? "超时"
-              : `${cur.current_ms.toFixed(0)} ms`}
-        </strong>
+        <div className="ping-row-head-main">
+          <span>{label}</span>
+          <strong>
+            {!cur
+              ? "—"
+              : cur.current_ms < 0
+                ? "超时"
+                : `${cur.current_ms.toFixed(0)} ms`}
+          </strong>
+        </div>
         <em className={cur && cur.loss_pct > 0 ? "warning" : undefined}>
           丢包 {!cur ? "—" : `${cur.loss_pct.toFixed(1)}%`}
         </em>

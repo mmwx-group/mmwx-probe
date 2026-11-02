@@ -760,13 +760,20 @@ button.net-box:not(:disabled):hover {
   gap: 4px;
 }
 .ping-row-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
-.ping-row-head > span {
+.ping-row-head-main {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+.ping-row-head-main > span {
   display: flex;
   min-width: 0;
   flex: 1;
@@ -777,16 +784,19 @@ button.net-box:not(:disabled):hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ping-row-head > strong {
+.ping-row-head-main > strong {
   flex-shrink: 0;
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
 }
 .ping-row-head > em {
-  flex-shrink: 0;
+  min-width: 0;
+  overflow: hidden;
   color: var(--muted);
   font-style: normal;
+  text-align: right;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ping-row-head > em.warning {
