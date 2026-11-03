@@ -865,6 +865,7 @@ button.net-box:not(:disabled):hover {
   border-color: #dbe1e8;
 }
 .route-badge-icon {
+  display: inline-flex;
   width: 16px;
   height: 16px;
   flex: none;

@@ -14,7 +14,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import Lottie from "lottie-react";
+import Lottie, { type LottieRefCurrentProps } from "lottie-react";
 import {
   Activity,
   BarChart3,
@@ -1458,14 +1458,39 @@ function displayReturnRoute(route: string): string {
     : route;
 }
 
+// 回程奖牌:每张卡片三枚、各是一个循环 Lottie(500×500、带表达式,却只显示 16px)。
+// 几十台服务器就是上百个同时逐帧渲染,桌面端明显卡顿。同步主控探针的两点优化:
+//   1. 滚进视口附近才挂载,视口外只留等大占位;
+//   2. 按动画自身 30 帧渲染(setSubframe(false)),不跟显示器刷新率(120Hz 屏上每枚每秒 120 次)。
 function ReturnRouteIcon({ premium }: { premium: boolean }) {
+  const holder = useRef<HTMLSpanElement>(null);
+  const lottieRef = useRef<LottieRefCurrentProps>(null);
+  // 没有 IntersectionObserver 的环境直接挂,不做懒加载
+  const [visible, setVisible] = useState(
+    () => typeof IntersectionObserver === "undefined",
+  );
+  useEffect(() => {
+    const el = holder.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => setVisible(entries.some((e) => e.isIntersecting)),
+      { rootMargin: "200px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   return (
-    <Lottie
-      animationData={premium ? premiumRouteAnimation : commonRouteAnimation}
-      aria-hidden="true"
-      className="route-badge-icon"
-      loop
-    />
+    <span ref={holder} className="route-badge-icon" aria-hidden="true">
+      {visible && (
+        <Lottie
+          lottieRef={lottieRef}
+          animationData={premium ? premiumRouteAnimation : commonRouteAnimation}
+          style={{ width: "100%", height: "100%" }}
+          loop
+          onDOMLoaded={() => lottieRef.current?.setSubframe(false)}
+        />
+      )}
+    </span>
   );
 }
 
