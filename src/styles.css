@@ -2589,3 +2589,271 @@ footer a:hover {
   display: block;
   height: 100%;
 }
+
+/* ============================================================
+   天真(sweet)—— 与主控天真主题同一套:草莓牛奶底 + 粉色波点、黏土风卡片
+   (粉色描边 + 底部实色厚度)、果冻按钮、糖果条纹进度条;夜晚为「星空糖果」深紫蓝。
+   放在文件末尾:后面没有同特异性的规则能再盖掉它。夜晚用 .theme-sweet.dark(0,3,0)
+   压过通用的 :root.dark。
+   ============================================================ */
+:root.theme-sweet {
+  font-family:
+    ui-rounded,
+    "SF Pro Rounded",
+    "Hiragino Maru Gothic ProN",
+    Nunito,
+    Inter,
+    system-ui,
+    -apple-system,
+    "PingFang SC",
+    sans-serif;
+  color: #5a3d55;
+  --primary: #e8508f;
+  --surface: #ffffff;
+  --border: #ffd3e5;
+  --muted: #86667e;
+  --radius: 22px;
+  --page-bg: #fff6fa;
+  --shadow: 0 14px 28px -14px rgba(236, 92, 153, 0.32), 0 4px 0 #ffe3ef;
+  --sweet-card2: #fff2f7;
+  --sweet-hero: #ffe0ee;
+  --sweet-dot: #ffe1ee;
+  --sweet-pink: #ff7db2;
+  --sweet-btn-edge: #c93c7b;
+  --sweet-btn-ink: #ffffff;
+  --sweet-rose: #b53170;
+  --sweet-lav: #b7a2ff;
+  --sweet-float: 0 16px 36px -10px rgba(236, 92, 153, 0.35);
+  --globe-ocean-light: #ffe0ee;
+  --globe-ocean-dark: #ffc4dc;
+}
+:root.theme-sweet.dark {
+  color: #fcebf5;
+  --primary: #ff8cc3;
+  --surface: #2f2547;
+  --border: #4a3b6b;
+  --muted: #c4a9cf;
+  --page-bg: #211934;
+  --shadow: 0 16px 30px -14px rgba(0, 0, 0, 0.6), 0 4px 0 #1a1329;
+  --sweet-card2: #392d56;
+  --sweet-hero: #4a2f55;
+  --sweet-dot: #2e2448;
+  --sweet-pink: #ff8cc3;
+  --sweet-btn-edge: #c4669a;
+  --sweet-btn-ink: #2a1b33;
+  --sweet-rose: #ff9acb;
+  --sweet-lav: #c3b1ff;
+  --sweet-float: 0 18px 40px -12px rgba(0, 0, 0, 0.65);
+  --globe-ocean-light: #392d56;
+  --globe-ocean-dark: #4a3b6b;
+}
+:root.theme-sweet .app-shell {
+  background-color: var(--page-bg);
+  background-image: radial-gradient(var(--sweet-dot) 2.2px, transparent 2.6px);
+  background-size: 26px 26px;
+}
+
+/* 顶栏:与页面同底,去掉分隔线;按钮做成胶囊 */
+:root.theme-sweet .topbar {
+  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--page-bg) 88%, transparent);
+}
+:root.theme-sweet .topbar h1,
+:root.theme-sweet .modal h2,
+:root.theme-sweet .server-title h2 {
+  letter-spacing: 0;
+}
+:root.theme-sweet .topbar button,
+:root.theme-sweet .ranges button {
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 3px 0 var(--border);
+}
+:root.theme-sweet .topbar button:active,
+:root.theme-sweet .ranges button:active,
+:root.theme-sweet .filters button:active {
+  transform: translateY(2px);
+}
+:root.theme-sweet .topbar button.active,
+:root.theme-sweet .ranges button.active {
+  border-color: var(--primary);
+  color: var(--sweet-btn-ink);
+  background: var(--primary);
+  box-shadow: 0 3px 0 var(--sweet-btn-edge);
+}
+
+/* 卡片:黏土风 —— 2px 粉色描边 + 大圆角 + 底部实色厚度 */
+:root.theme-sweet .kpi,
+:root.theme-sweet .globe-mini,
+:root.theme-sweet .probe-toolbar,
+:root.theme-sweet .server-card,
+:root.theme-sweet .server-table-wrap,
+:root.theme-sweet .globe-card,
+:root.theme-sweet .kpi-grid.six {
+  border-width: 2px;
+  border-radius: 28px;
+}
+:root.theme-sweet .kpi-grid.six > .kpi {
+  border: 0;
+  border-radius: 0;
+  box-shadow: 1px 1px 0 0 var(--border);
+}
+:root.theme-sweet button.kpi:hover {
+  border-color: var(--sweet-pink);
+}
+:root.theme-sweet .server-title {
+  border-bottom-color: var(--border);
+}
+/* 服务器名前一朵小花(与主控天真主题的卡片标题一致)。名字在一个 display:block 的 span 里,
+   h2 改成 flex 才能让花和名字同排,span 保持可收缩以留住省略号 */
+:root.theme-sweet .server-title h2 {
+  display: flex;
+  align-items: center;
+}
+:root.theme-sweet .server-title h2 > span {
+  min-width: 0;
+}
+:root.theme-sweet .server-title h2::before {
+  content: "";
+  flex: none;
+  display: inline-block;
+  width: 1.15em;
+  height: 1.15em;
+  margin-right: 0.3em;
+  vertical-align: -0.2em;
+  background: url("/sweet-flower.svg") center / contain no-repeat;
+}
+:root.theme-sweet .net-boxes,
+:root.theme-sweet .speed,
+:root.theme-sweet .cumulative-traffic,
+:root.theme-sweet .conn-counts,
+:root.theme-sweet .ping-grid,
+:root.theme-sweet .return-route-badges,
+:root.theme-sweet .server-table td {
+  border-color: var(--border);
+}
+/* 卡中卡(网络格):浅粉块 + 内卡圆角 */
+:root.theme-sweet .net-box {
+  border-radius: 16px;
+  background: var(--sweet-card2);
+}
+:root.theme-sweet button.net-box:not(:disabled):hover {
+  background: var(--sweet-hero);
+}
+
+/* 进度条:糖果条纹 */
+:root.theme-sweet .meter {
+  height: 7px;
+  background: var(--sweet-card2);
+}
+:root.theme-sweet .meter i {
+  background-color: var(--sweet-pink);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.35) 0 6px,
+    transparent 6px 12px
+  );
+}
+:root.theme-sweet .meter i.warn {
+  background-color: #ffc75a;
+}
+:root.theme-sweet .meter i.bad {
+  background-color: #ff6f8e;
+}
+
+/* 筛选条:搜索框、分段组、按钮都是胶囊;选中项是实心草莓粉果冻 */
+:root.theme-sweet .probe-search {
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--sweet-card2);
+}
+:root.theme-sweet .filters button {
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  color: inherit;
+}
+:root.theme-sweet .filters button.active {
+  border-color: var(--primary);
+  color: var(--sweet-btn-ink);
+  background: var(--primary);
+  box-shadow: 0 3px 0 var(--sweet-btn-edge);
+}
+:root.theme-sweet .filter-seg,
+:root.theme-sweet .density-toggle {
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  background: var(--sweet-card2);
+}
+:root.theme-sweet .filters .filter-seg > button,
+:root.theme-sweet .filters .density-toggle > button {
+  border: 0;
+  border-radius: 999px;
+  padding-inline: 14px;
+  font-weight: 700;
+}
+:root.theme-sweet .filters .filter-seg > button[aria-pressed="true"],
+:root.theme-sweet .filters .density-toggle > button.active {
+  color: var(--sweet-btn-ink);
+  background: var(--primary);
+  box-shadow: 0 3px 0 var(--sweet-btn-edge);
+}
+:root.theme-sweet .filters .filter-seg > button[aria-pressed="true"] > em {
+  color: inherit !important;
+}
+:root.theme-sweet .toolbar-end .region-filter {
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--sweet-card2);
+}
+
+/* 弹窗:大圆角 + 顶上一条斜纹纸胶带 */
+:root.theme-sweet .modal {
+  border-width: 2px;
+  border-radius: 30px;
+  box-shadow: var(--sweet-float);
+}
+:root.theme-sweet .modal::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  z-index: 2;
+  width: 84px;
+  height: 18px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 125, 178, 0.6) 0 6px,
+    rgba(255, 255, 255, 0.6) 6px 12px
+  );
+  transform: translateX(-50%) rotate(-3deg);
+  pointer-events: none;
+}
+:root.theme-sweet.dark .modal::before {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 140, 195, 0.6) 0 6px,
+    rgba(195, 177, 255, 0.5) 6px 12px
+  );
+}
+:root.theme-sweet .unlock-tabs {
+  border-radius: 999px;
+  background: var(--sweet-card2);
+}
+:root.theme-sweet .unlock-tabs button {
+  border-radius: 999px;
+}
+:root.theme-sweet .unlock-tabs button[data-active] {
+  color: var(--sweet-btn-ink);
+  background: var(--primary);
+}
+
+/* 许可证称号铭牌:实心草莓粉胶囊 */
+:root.theme-sweet .probe-license-nameplate {
+  border-color: transparent;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--sweet-btn-ink);
+  box-shadow: 0 3px 0 var(--sweet-btn-edge);
+}
