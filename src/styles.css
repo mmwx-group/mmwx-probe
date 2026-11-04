@@ -13,6 +13,9 @@
   color: #172033;
   background: #f5f7fb;
   font-synthesis: none;
+  /* 正文色变量:.server-meta / .globe-toggle / .unlock-popover 读它;原来从没定义,
+     暗色下一直落到写死的深色兜底,卡片底部续费行在深色背景上几乎看不见 */
+  --foreground: #172033;
   --primary: #2563eb;
   --surface: #fff;
   --border: #e2e8f0;
@@ -1793,6 +1796,7 @@ footer a:hover {
 
 :root.dark {
   color: #e5e7eb;
+  --foreground: #e5e7eb;
   --surface: #111827;
   --border: #334155;
   --muted: #94a3b8;
@@ -2634,6 +2638,7 @@ footer a:hover {
     "PingFang SC",
     sans-serif;
   color: #5a3d55;
+  --foreground: #5a3d55;
   --primary: #e8508f;
   --surface: #ffffff;
   --border: #ffd3e5;
@@ -2655,6 +2660,7 @@ footer a:hover {
 }
 :root.theme-sweet.dark {
   color: #fcebf5;
+  --foreground: #fcebf5;
   --primary: #ff8cc3;
   --surface: #2f2547;
   --border: #4a3b6b;
@@ -2882,4 +2888,355 @@ footer a:hover {
   background: var(--primary);
   color: var(--sweet-btn-ink);
   box-shadow: 0 3px 0 var(--sweet-btn-edge);
+}
+
+/* ============================================================
+   液态玻璃(glass)—— 与主控液态玻璃主题同一套:极光背景 + 半透明壳体。
+   材质三层:① blur + saturate(只模糊会把背景冲淡发灰,要把饱和拉回来)
+            ② 一像素顶部高光边(玻璃的厚度感)③ 左上角斜向折射高光。
+   材质整体放在各容器的 ::before 上,内容刷新时只重绘内容层,毛玻璃的合成结果可以缓存
+   (主控 #536:几十张卡同时刷新、材质画在元素自身上会整片频闪)。
+   主控还支持自定义壁纸与色调,探针接口目前只下发主题名,这里用默认极光。
+   ============================================================ */
+:root.theme-glass {
+  color: #16202b;
+  --foreground: #16202b;
+  --primary: #0c6d92;
+  --surface: rgba(255, 255, 255, 0.5);
+  --border: rgba(22, 32, 43, 0.14);
+  --muted: rgba(22, 32, 43, 0.66);
+  --radius: 14px;
+  --page-bg: #e8eef5;
+  --shadow: 0 18px 40px rgba(22, 32, 43, 0.16);
+  --g-card-base: rgba(232, 238, 245, 0.3);
+  --g-card-fill: rgba(255, 255, 255, 0.5);
+  --g-inset-fill: rgba(255, 255, 255, 0.42);
+  --g-edge: rgba(255, 255, 255, 0.75);
+  --g-ring: rgba(22, 32, 43, 0.09);
+  --g-sheen: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55),
+    rgba(255, 255, 255, 0) 160px
+  );
+  --g-scrim: rgba(232, 238, 245, 0.22);
+  --g-tone-a: 76, 184, 245;
+  --g-tone-b: 240, 163, 91;
+  --g-tone-c: 201, 214, 255;
+  --g-tone-a-alpha: 0.42;
+  --g-tone-b-alpha: 0.36;
+  --g-tone-c-alpha: 0.22;
+  --globe-ocean-light: #d6ebf8;
+  --globe-ocean-dark: #b4dbf2;
+}
+:root.theme-glass.dark {
+  color: #eef3f8;
+  --foreground: #eef3f8;
+  --primary: #4cb8f5;
+  --surface: rgba(255, 255, 255, 0.085);
+  --border: rgba(255, 255, 255, 0.16);
+  --muted: rgba(238, 243, 248, 0.68);
+  --page-bg: #0b1220;
+  --shadow: 0 18px 40px rgba(2, 6, 14, 0.45);
+  --g-card-base: rgba(11, 18, 32, 0.46);
+  --g-card-fill: rgba(255, 255, 255, 0.085);
+  --g-inset-fill: rgba(255, 255, 255, 0.06);
+  --g-edge: rgba(255, 255, 255, 0.22);
+  --g-ring: rgba(255, 255, 255, 0.12);
+  --g-sheen: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.16),
+    rgba(255, 255, 255, 0) 160px
+  );
+  --g-scrim: rgba(6, 10, 18, 0.22);
+  --g-tone-a-alpha: 0.55;
+  --g-tone-b-alpha: 0.42;
+  --g-tone-c-alpha: 0.3;
+  --globe-ocean-light: #14324c;
+  --globe-ocean-dark: #1d4a6c;
+}
+/* 背景层:极光 + 遮罩,挂在 body 伪元素上,整页固定不随滚动 */
+:root.theme-glass {
+  background: var(--page-bg);
+}
+/* body 必须透明:根元素有背景时 body 的背景不再传给画布,而是画在 body 盒子上,
+   正好压住下面 z-index 为负的极光层 */
+:root.theme-glass body {
+  background: transparent;
+}
+:root.theme-glass body::before,
+:root.theme-glass body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+}
+:root.theme-glass body::before {
+  background-image:
+    radial-gradient(
+      1100px 620px at 8% 10%,
+      rgba(var(--g-tone-a), var(--g-tone-a-alpha)),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 560px at 92% 18%,
+      rgba(var(--g-tone-b), var(--g-tone-b-alpha)),
+      transparent 60%
+    ),
+    radial-gradient(
+      1000px 700px at 55% 100%,
+      rgba(var(--g-tone-c), var(--g-tone-c-alpha)),
+      transparent 62%
+    );
+}
+:root.theme-glass body::after {
+  z-index: -1;
+  background-color: var(--g-scrim);
+  /* 极淡噪点抖动,打散大面积低对比渐变的 8 位色带(同主控) */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='128' height='128' filter='url(%23n)' opacity='0.022'/%3E%3C/svg%3E");
+  background-size: 128px 128px;
+}
+:root.theme-glass .app-shell {
+  background: transparent;
+}
+/* 壳体材质:卡片 / 汇总 / 工具条 / 表格 / 地球 / 弹窗 / 顶栏 */
+:root.theme-glass .kpi-grid.six,
+:root.theme-glass .kpi-grid.three > .kpi,
+:root.theme-glass .globe-mini,
+:root.theme-glass .probe-toolbar,
+:root.theme-glass .server-card,
+:root.theme-glass .server-table-wrap,
+:root.theme-glass .globe-card,
+:root.theme-glass .modal,
+:root.theme-glass .topbar {
+  border-color: var(--g-ring);
+  background: transparent;
+  box-shadow:
+    inset 0 1px 0 var(--g-edge),
+    var(--shadow);
+  isolation: isolate;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root.theme-glass .kpi-grid.six,
+:root.theme-glass .kpi-grid.three > .kpi,
+:root.theme-glass .globe-mini,
+:root.theme-glass .globe-card {
+  position: relative;
+}
+:root.theme-glass .kpi-grid.six::before,
+:root.theme-glass .kpi-grid.three > .kpi::before,
+:root.theme-glass .globe-mini::before,
+:root.theme-glass .probe-toolbar::before,
+:root.theme-glass .server-card::before,
+:root.theme-glass .server-table-wrap::before,
+:root.theme-glass .globe-card::before,
+:root.theme-glass .modal::before,
+:root.theme-glass .topbar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-color: var(--g-card-base);
+  background-image:
+    var(--g-sheen),
+    linear-gradient(0deg, var(--g-card-fill), var(--g-card-fill));
+  -webkit-backdrop-filter: blur(22px) saturate(1.6);
+  backdrop-filter: blur(22px) saturate(1.6);
+  pointer-events: none;
+}
+/* 顶栏贴着页面顶,不要圆角和外投影,只留底部一道细线 */
+:root.theme-glass .topbar {
+  box-shadow: none;
+  border-bottom-color: var(--g-ring);
+}
+/* 汇总格之间的分隔线换成玻璃细环 */
+:root.theme-glass .kpi-grid.six > .kpi {
+  box-shadow: 1px 1px 0 0 var(--g-ring);
+}
+/* 内嵌控件:更薄一层玻璃(卡中卡、搜索框、分段按钮、顶栏按钮) */
+:root.theme-glass .net-box,
+:root.theme-glass .probe-search,
+:root.theme-glass .filter-seg,
+:root.theme-glass .density-toggle,
+:root.theme-glass .topbar button:not(.active),
+:root.theme-glass .ranges button:not(.active),
+:root.theme-glass .filters > button:not(.active),
+:root.theme-glass .table-route:not(.gold) {
+  border-color: var(--g-ring);
+  background: var(--g-inset-fill);
+}
+:root.theme-glass button.net-box:not(:disabled):hover,
+:root.theme-glass .topbar button:not(.active):hover {
+  background: var(--g-card-fill);
+}
+:root.theme-glass .filters .filter-seg > button[aria-pressed="true"],
+:root.theme-glass .filters .density-toggle > button.active {
+  background: var(--g-card-fill);
+  box-shadow:
+    inset 0 1px 0 var(--g-edge),
+    0 1px 2px rgb(0 0 0 / 0.08);
+}
+:root.theme-glass .meter {
+  background: var(--g-ring);
+}
+:root.theme-glass .server-table td,
+:root.theme-glass .net-boxes,
+:root.theme-glass .ping-grid,
+:root.theme-glass .return-route-badges,
+:root.theme-glass .server-title {
+  border-color: var(--g-ring);
+}
+:root.theme-glass .server-table tbody tr:hover {
+  background: var(--g-inset-fill);
+}
+/* 弹窗背后的遮罩:淡一点,让玻璃有东西可折射 */
+:root.theme-glass .modal-backdrop {
+  background: rgba(15, 23, 42, 0.32);
+}
+:root.theme-glass.dark .modal-backdrop {
+  background: rgba(2, 6, 14, 0.5);
+}
+
+/* ============================================================
+   Meow —— 与主控 Meow 主题(MeowX 客户端同一套品牌语言)一致:奶油底、玫红强调、
+   圆润大卡片。分层靠底色,不靠描边和硬阴影:页面奶油 → 卡片白 → 卡片里的控件回到奶油灰。
+   主控可另选「海派」字体,探针接口目前不下发该设置,这里用主题自带的圆体标题。
+   ============================================================ */
+:root.theme-meow {
+  color: #2a2130;
+  --foreground: #2a2130;
+  --primary: #b02e63;
+  --surface: #ffffff;
+  --border: rgba(42, 33, 48, 0.1);
+  --muted: #665a69;
+  --radius: 24px;
+  --page-bg: #fbf7f2;
+  --shadow: none;
+  --meow-card2: #f3ece4;
+  --meow-hero: #fce4ec;
+  --meow-strong: #7a5647;
+  --meow-strong-ink: #fbf7f2;
+  --meow-float: 0 10px 30px rgba(42, 33, 48, 0.14);
+  --globe-ocean-light: #fce4ec;
+  --globe-ocean-dark: #f9cbda;
+}
+:root.theme-meow.dark {
+  color: #f7f0f3;
+  --foreground: #f7f0f3;
+  --primary: #f7b6cb;
+  --surface: #1f1a25;
+  --border: rgba(255, 255, 255, 0.1);
+  --muted: #b9adbb;
+  --page-bg: #141118;
+  --meow-card2: #2a2431;
+  --meow-hero: #33202b;
+  --meow-strong: #f7f0f3;
+  --meow-strong-ink: #2a2130;
+  --meow-float: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --globe-ocean-light: #2a2431;
+  --globe-ocean-dark: #33202b;
+}
+:root.theme-meow .topbar h1,
+:root.theme-meow .server-title h2,
+:root.theme-meow .modal h2,
+:root.theme-meow .kpi > strong {
+  font-family:
+    ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", Inter, system-ui,
+    sans-serif;
+}
+/* 顶栏与页面同底、无分隔线;图标按钮去框,选中态是实心胶囊 */
+:root.theme-meow .topbar {
+  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--page-bg) 90%, transparent);
+}
+:root.theme-meow .topbar button,
+:root.theme-meow .ranges button {
+  border-color: transparent;
+  border-radius: 12px;
+  background: transparent;
+}
+:root.theme-meow .topbar button:hover,
+:root.theme-meow .ranges button:hover {
+  background: var(--meow-card2);
+}
+:root.theme-meow .topbar button.active,
+:root.theme-meow .ranges button.active {
+  border-color: var(--meow-strong);
+  color: var(--meow-strong-ink);
+  background: var(--meow-strong);
+}
+/* 卡片:白底大圆角、无描边无阴影,靠与奶油底的色差分层 */
+:root.theme-meow .kpi,
+:root.theme-meow .kpi-grid.six,
+:root.theme-meow .globe-mini,
+:root.theme-meow .probe-toolbar,
+:root.theme-meow .server-card,
+:root.theme-meow .server-table-wrap,
+:root.theme-meow .globe-card {
+  border-color: transparent;
+  border-radius: 28px;
+}
+:root.theme-meow .kpi-grid.six > .kpi {
+  border-radius: 0;
+}
+:root.theme-meow .modal {
+  border-color: transparent;
+  border-radius: 28px;
+  box-shadow: var(--meow-float);
+}
+/* 有告警的卡片仍要一眼看出来:保留红色描边 */
+:root.theme-meow .server-card[data-alert="true"] {
+  border-color: color-mix(in srgb, #ef4444 55%, transparent);
+}
+/* 卡中卡与控件:回到奶油灰,圆角 18 / 12 */
+:root.theme-meow .net-box {
+  border-radius: 18px;
+  background: var(--meow-card2);
+}
+:root.theme-meow button.net-box:not(:disabled):hover {
+  background: var(--meow-hero);
+}
+:root.theme-meow .probe-search {
+  border-color: transparent;
+  border-radius: 999px;
+  background: var(--meow-card2);
+}
+:root.theme-meow .probe-search input {
+  background: transparent;
+}
+:root.theme-meow .filter-seg,
+:root.theme-meow .density-toggle {
+  border-radius: 999px;
+  background: var(--meow-card2);
+}
+:root.theme-meow .filters .filter-seg > button,
+:root.theme-meow .filters .density-toggle > button {
+  border-radius: 999px;
+}
+:root.theme-meow .filters .filter-seg > button[aria-pressed="true"],
+:root.theme-meow .filters .density-toggle > button.active {
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgb(42 33 48 / 0.12);
+}
+:root.theme-meow .filters > button {
+  border-color: transparent;
+  border-radius: 999px;
+  background: var(--meow-card2);
+}
+:root.theme-meow .filters > button.active {
+  border-color: var(--meow-strong);
+  color: var(--meow-strong-ink);
+  background: var(--meow-strong);
+}
+:root.theme-meow .meter {
+  background: var(--meow-card2);
+}
+:root.theme-meow .table-route:not(.gold) {
+  border-color: transparent;
+  background: var(--meow-card2);
+}
+:root.theme-meow .server-table tbody tr:hover {
+  background: color-mix(in srgb, var(--meow-hero) 45%, transparent);
 }
