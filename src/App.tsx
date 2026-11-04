@@ -2015,212 +2015,262 @@ function ServerCard({
   );
 }
 
-function TableMetric({ label, percent }: { label: string; percent?: number }) {
+// 列表模式一格指标:数值 / 细条 / 小字三层,各列定宽,一列里的数字上下对齐(与内置探针同形)。
+function TableMetric({
+  value,
+  percent,
+  sub,
+  subRight,
+}: {
+  value: string;
+  percent?: number;
+  sub?: ReactNode;
+  subRight?: ReactNode;
+}) {
   return (
     <div className="table-metric">
-      <span className="table-metric-head">
-        <small>{label}</small>
-        <span>{percent === undefined ? "—" : `${percent.toFixed(1)}%`}</span>
-      </span>
+      <span className="table-metric-value">{value}</span>
       <div className="meter">
         {percent !== undefined && (
-          <i style={{ width: `${Math.min(100, Math.max(0, percent))}%` }} />
+          <i
+            className={percent > 90 ? "bad" : percent > 70 ? "warn" : undefined}
+            style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
+          />
         )}
       </div>
+      {(sub || subRight) && (
+        <div className="metric-sub">
+          <span>{sub}</span>
+          {subRight && <span>{subRight}</span>}
+        </div>
+      )}
     </div>
   );
 }
 
-function TableResources({ server }: { server: ProbeServer }) {
-  const memory = server.mem_total
-    ? pct(server.mem_used, server.mem_total)
-    : undefined;
-  const disk = server.disk_total
-    ? pct(server.disk_used, server.disk_total)
-    : undefined;
-  return (
-    <div className="table-resources">
-      <div className="table-resource-row">
-        <TableMetric label="CPU" percent={server.cpu_pct} />
-      </div>
-      <div className="table-resource-row">
-        <TableMetric label="内存" percent={memory} />
-      </div>
-      <div className="table-resource-row">
-        <TableMetric label="硬盘" percent={disk} />
-      </div>
-      <div className="table-resource-row">
-        <TableTraffic server={server} label={trafficUsageLabel(server)} />
-      </div>
-    </div>
-  );
-}
-
-function TablePing({
-  ping,
-  serverIndex,
-}: {
-  ping?: ProbePingSeries[];
-  serverIndex: number;
-}) {
-  const [latencyOpen, setLatencyOpen] = useState(false);
-  const [lossOpen, setLossOpen] = useState(false);
-  if (!ping?.length) return <span className="dash">—</span>;
-  const average = averagePing(ping);
-  const lines = [{ ...average, key: "__avg__" }, ...ping];
-  return (
-    <>
-      <div className="table-ping-pair">
-        <button
-          className="table-ping"
-          type="button"
-          onClick={() => setLatencyOpen(true)}
-        >
-          <span>
-            <small>延迟</small>
-            <strong>
-              {average.current_ms < 0
-                ? "超时"
-                : `${average.current_ms.toFixed(0)} ms`}
-            </strong>
-          </span>
-          <em>
-            {average.buckets.map((bucket, index) => (
-              <i
-                key={index}
-                className={
-                  bucket.ms < 0 && bucket.loss < 0
-                    ? "none"
-                    : bucket.ms < 0
-                      ? "bad"
-                      : bucket.ms >= 200
-                        ? "warn"
-                        : "good"
-                }
-              />
-            ))}
-          </em>
-        </button>
-        <button
-          className="table-ping"
-          type="button"
-          onClick={() => setLossOpen(true)}
-        >
-          <span>
-            <small>丢包</small>
-            <b>{average.loss_pct.toFixed(1)}%</b>
-          </span>
-          <em>
-            {average.buckets.map((bucket, index) => (
-              <i
-                key={index}
-                className={
-                  bucket.loss < 0
-                    ? "none"
-                    : bucket.loss >= 20
-                      ? "bad"
-                      : bucket.loss > 0
-                        ? "warn"
-                        : "good"
-                }
-              />
-            ))}
-          </em>
-        </button>
-      </div>
-      {latencyOpen && (
-        <TrendDialog
-          serverIndex={serverIndex}
-          initial={lines}
-          targetKey="__avg__"
-          title="平均"
-          mode="latency"
-          close={() => setLatencyOpen(false)}
-        />
-      )}
-      {lossOpen && (
-        <TrendDialog
-          serverIndex={serverIndex}
-          initial={lines}
-          targetKey="__avg__"
-          title="平均"
-          mode="loss"
-          close={() => setLossOpen(false)}
-        />
-      )}
-    </>
-  );
-}
-
-function TableTraffic({
-  server,
-  label,
-}: {
-  server: ProbeServer;
-  label?: string;
-}) {
+// 计费流量格:用量 / 限额 + 细条 + 百分比与重置日;计费口径(规则、公式、原始上下行、对账调整、周期)
+// 改为悬停气泡,点开看日流量 —— 原来整段口径平铺在格子里,一行被撑得很高。
+function TableTraffic({ server }: { server: ProbeServer }) {
   const [open, setOpen] = useState(false);
+  const bubble = useHoverBubble();
   const trafficUsed = billableTraffic(server);
   const formula = trafficFormulaLabel(server);
   if (trafficUsed === undefined) return <span className="dash">—</span>;
+  const limit = server.traffic_limit ?? 0;
+  const usedPct = pct(trafficUsed, limit);
   return (
     <>
       <button
         type="button"
-        className="table-traffic table-traffic-button"
-        onClick={() => setOpen(true)}
+        className="metric-button"
+        onClick={() => {
+          bubble.hide();
+          setOpen(true);
+        }}
+        onPointerEnter={bubble.show}
+        onPointerLeave={bubble.hide}
       >
-        <span className="table-metric-head">
-          <small>{label || trafficUsageLabel(server)}</small>
-          <span>
-            {server.traffic_limit
-              ? `${bytes(trafficUsed, false)} / ${bytes(server.traffic_limit, false)}`
-              : bytes(trafficUsed, false)}
-          </span>
-        </span>
-        <small>计费规则：{trafficRuleLabel(server)}</small>
-        {formula && <small>计费用量 = {formula}</small>}
-        {(server.traffic_used_up !== undefined ||
-          server.traffic_used_down !== undefined) && (
-          <small>
-            原始周期 ↑ {bytes(server.traffic_used_up, false)} · ↓{" "}
-            {bytes(server.traffic_used_down, false)}
-          </small>
-        )}
-        {server.traffic_adjustment !== undefined &&
-          server.traffic_adjustment !== 0 && (
-            <small>对账调整：{signedBytes(server.traffic_adjustment)}</small>
+        <TableMetric
+          value={
+            limit
+              ? `${bytes(trafficUsed, false)} / ${bytes(limit, false)}`
+              : bytes(trafficUsed, false)
+          }
+          percent={limit ? usedPct : undefined}
+          sub={limit ? `${usedPct.toFixed(0)}%` : "不限量"}
+          subRight={
+            server.period_end
+              ? `${server.period_end.slice(5).replace("-", "/")} 重置`
+              : undefined
+          }
+        />
+        {bubble.pos &&
+          createPortal(
+            <span className="metric-hover-detail" style={bubble.pos}>
+              <small>计费规则：{trafficRuleLabel(server)}</small>
+              {formula && <small>计费用量 = {formula}</small>}
+              {(server.traffic_used_up !== undefined ||
+                server.traffic_used_down !== undefined) && (
+                <small>
+                  原始周期 ↑ {bytes(server.traffic_used_up, false)} · ↓{" "}
+                  {bytes(server.traffic_used_down, false)}
+                </small>
+              )}
+              {server.traffic_adjustment !== undefined &&
+                server.traffic_adjustment !== 0 && (
+                  <small>
+                    对账调整：{signedBytes(server.traffic_adjustment)}
+                  </small>
+                )}
+              {server.period_start && server.period_end && (
+                <small>
+                  {server.period_start} — {server.period_end}
+                </small>
+              )}
+              {!!server.daily_traffic?.length && (
+                <small>点击查看原始上下行趋势</small>
+              )}
+            </span>,
+            document.body,
           )}
-        {server.period_start && server.period_end && (
-          <small>
-            {server.period_start} — {server.period_end}
-          </small>
-        )}
-        {!!server.traffic_limit && (
-          <div className="meter">
-            <i
-              style={{
-                width: `${pct(trafficUsed, server.traffic_limit)}%`,
-              }}
-            />
-          </div>
-        )}
       </button>
       {open && <TrafficDialog server={server} close={() => setOpen(false)} />}
     </>
   );
 }
 
-function TableBootTraffic({ server }: { server: ProbeServer }) {
-  const currentBoot = bootTraffic(server);
-  if (currentBoot.uplink === undefined && currentBoot.downlink === undefined) {
-    return <span className="dash">—</span>;
-  }
+function tablePingBlocks(
+  buckets: ProbePingSeries["buckets"],
+  kind: "latency" | "loss",
+) {
+  return buckets.map((bucket, index) => {
+    const value = kind === "loss" ? bucket.loss : bucket.ms;
+    const level =
+      bucket.ms < 0 && bucket.loss < 0
+        ? "none"
+        : kind === "loss"
+          ? value < 0
+            ? "none"
+            : value >= 20
+              ? "bad"
+              : value > 0
+                ? "warn"
+                : "good"
+          : value < 0
+            ? "bad"
+            : value >= 200
+              ? "warn"
+              : "good";
+    return <i key={index} className={level} />;
+  });
+}
+
+// 列表模式延迟格:每个探测目标一行「名称 | 色块条 | 延迟」,丢包大于 0 才标黄跟在后面;
+// 三网时正好三行,与资源格、三网回程行高对齐。点色块条打开同一个曲线弹窗。
+function TablePing({
+  ping,
+  serverIndex,
+  triISP,
+}: {
+  ping?: ProbePingSeries[];
+  serverIndex: number;
+  triISP?: TriISPPublic;
+}) {
+  const [chart, setChart] = useState<{
+    targetKey: string;
+    title: string;
+    mode: "latency" | "loss";
+  } | null>(null);
+  if (!ping?.length) return <span className="dash">—</span>;
+  const average = averagePing(ping);
+  const lines = [{ ...average, key: "__avg__" }, ...ping];
+  const triRows = triISPRows(triISP, ping);
+  const lossText = (loss: number) => `${loss.toFixed(loss < 10 ? 1 : 0)}%`;
+  const line = (
+    key: string,
+    label: ReactNode,
+    cur: ProbePingSeries | undefined,
+    mode: "latency" | "loss",
+    targetKey: string,
+  ) => {
+    const loss = cur?.loss_pct ?? 0;
+    return (
+      <div className="table-ping-line" key={key}>
+        <small>{label}</small>
+        <button
+          type="button"
+          className="ping-blocks"
+          title={mode === "loss" ? "点击查看丢包率趋势" : "点击查看延迟趋势"}
+          onClick={() => cur && setChart({ targetKey, title: cur.label, mode })}
+        >
+          {tablePingBlocks(cur?.buckets ?? [], mode)}
+        </button>
+        <span className="table-ping-value">
+          {!cur ? (
+            <span className="dash">—</span>
+          ) : mode === "loss" ? (
+            <em className={loss > 0 ? "warning" : undefined}>
+              {lossText(loss)}
+            </em>
+          ) : (
+            <>
+              <strong>
+                {cur.current_ms < 0
+                  ? "超时"
+                  : `${cur.current_ms.toFixed(0)} ms`}
+              </strong>
+              {loss > 0 && <em className="warning">{lossText(loss)}</em>}
+            </>
+          )}
+        </span>
+      </div>
+    );
+  };
   return (
-    <span className="table-cumulative">
-      <span>↑ {bytes(currentBoot.uplink, false)}</span>
-      <span>↓ {bytes(currentBoot.downlink, false)}</span>
-    </span>
+    <>
+      <div className="table-ping-lines">
+        {triRows.length > 0
+          ? triRows.map((row) =>
+              line(
+                row.isp,
+                row.label,
+                row.series,
+                "latency",
+                row.series?.key || row.series?.label || "__avg__",
+              ),
+            )
+          : [
+              line("latency", "延迟", average, "latency", "__avg__"),
+              line("loss", "丢包", average, "loss", "__avg__"),
+            ]}
+      </div>
+      {chart && (
+        <TrendDialog
+          serverIndex={serverIndex}
+          initial={lines}
+          targetKey={chart.targetKey}
+          title={chart.title}
+          mode={chart.mode}
+          close={() => setChart(null)}
+        />
+      )}
+    </>
+  );
+}
+
+// 列表模式三网回程:三行小标签竖排,精品线路琥珀色、普通线路灰,不放卡片里的奖牌动画。
+function TableReturnRoutes({
+  routes,
+  telecomPaidPeer,
+}: {
+  routes: ProbeReturnRoute[];
+  telecomPaidPeer?: boolean;
+}) {
+  const byCarrier = new Map(routes.map((route) => [route.carrier, route]));
+  return (
+    <div className="table-route-list">
+      {(["telecom", "unicom", "mobile"] as const).map((carrier) => {
+        const route = byCarrier.get(carrier);
+        const detected = displayReturnRoute(route?.route_type || "Unknown");
+        const routeType =
+          carrier === "telecom" && telecomPaidPeer && detected === "163"
+            ? "163 PP"
+            : detected;
+        const premium = goldRoutes.has(
+          routeType.toUpperCase().replace(/[^A-Z0-9]/g, ""),
+        );
+        return (
+          <div
+            key={carrier}
+            className={premium ? "table-route gold" : "table-route"}
+            title={route?.region ? `${route.region} · ${routeType}` : routeType}
+          >
+            <small>{routeCarrierLabels[carrier]}</small>
+            <strong>{routeType}</strong>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -2228,6 +2278,7 @@ function TableRenewal({ server }: { server: ProbeServer }) {
   const permanent = server.renewal_cycle === "permanent";
   if (!server.expires_at && server.renewal_price === undefined && !permanent)
     return <span className="dash">—</span>;
+  const warn = expiring(server) || expired(server) ? "warning" : undefined;
   return (
     <div className="table-renewal">
       {permanent && !server.expires_at && (
@@ -2241,11 +2292,12 @@ function TableRenewal({ server }: { server: ProbeServer }) {
             href={server.provider_url}
             target="_blank"
             rel="noopener noreferrer"
+            className={warn}
           >
             <CalendarClock size={13} /> {remainingDays(server.expires_at)}
           </a>
         ) : (
-          <span>
+          <span className={warn}>
             <CalendarClock size={13} /> {remainingDays(server.expires_at)}
           </span>
         ))}
@@ -2262,7 +2314,14 @@ function TableRenewal({ server }: { server: ProbeServer }) {
   );
 }
 
-function ServerTable({ servers }: { servers: ProbeServer[] }) {
+function ServerTable({
+  items,
+  triISP,
+}: {
+  items: { server: ProbeServer; index: number }[];
+  triISP?: TriISPPublic;
+}) {
+  const dash = <span className="dash">—</span>;
   return (
     <section className="server-table-wrap">
       <div className="table-scroll">
@@ -2270,8 +2329,10 @@ function ServerTable({ servers }: { servers: ProbeServer[] }) {
           <thead>
             <tr>
               <th>服务器</th>
-              <th>状态</th>
-              <th>资源与流量</th>
+              <th>CPU</th>
+              <th>内存</th>
+              <th>硬盘</th>
+              <th>计费流量</th>
               <th>网速</th>
               <th>本次开机网卡</th>
               <th>延迟</th>
@@ -2279,80 +2340,141 @@ function ServerTable({ servers }: { servers: ProbeServer[] }) {
             </tr>
           </thead>
           <tbody>
-            {servers.map((server, index) => {
+            {items.map(({ server, index }) => {
+              const name = (
+                <Twemoji>
+                  {displayServerName(
+                    server.name,
+                    `服务器 ${index + 1}`,
+                    regionFlag(probeRegion(server)),
+                  )}
+                </Twemoji>
+              );
+              const hasMem =
+                !!server.mem_total && server.mem_used !== undefined;
+              const hasDisk =
+                !!server.disk_total && server.disk_used !== undefined;
+              const currentBoot = bootTraffic(server);
               return (
-                <tr key={`${server.name}-${index}`}>
+                <tr
+                  key={`${server.name}-${index}`}
+                  className={server.online ? undefined : "offline"}
+                >
                   <td className="table-name">
                     <span className="table-name-line">
-                      {server.provider_url ? (
-                        <a
-                          href={server.provider_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Twemoji>
-                            {displayServerName(
-                              server.name,
-                              `服务器 ${index + 1}`,
-                              regionFlag(probeRegion(server)),
-                            )}
-                          </Twemoji>
-                        </a>
-                      ) : (
-                        <Twemoji>
-                          {displayServerName(
-                            server.name,
-                            `服务器 ${index + 1}`,
-                            regionFlag(probeRegion(server)),
-                          )}
-                        </Twemoji>
-                      )}
+                      <i
+                        className={
+                          server.online ? "status-dot online" : "status-dot"
+                        }
+                        title={server.online ? "在线" : "离线"}
+                      />
+                      <span className="table-name-text">
+                        {server.provider_url ? (
+                          <a
+                            href={server.provider_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {name}
+                          </a>
+                        ) : (
+                          name
+                        )}
+                      </span>
                       {!!server.unlocks?.length && (
                         <UnlockHoverIcon unlocks={server.unlocks} />
                       )}
-                      <span title={systemTitle(server)}>
+                      <span className="table-os" title={systemTitle(server)}>
                         <SystemIcon server={server} />
                       </span>
+                      {!server.online && (
+                        <span className="table-offline-tag">离线</span>
+                      )}
                     </span>
                     <TableRenewal server={server} />
                   </td>
-                  <td>
-                    <span className="table-status">
-                      <i className={server.online ? "online" : ""} />
-                      {server.online ? "在线" : "离线"}
-                    </span>
+                  <td className="table-col-metric">
+                    {server.online && server.cpu_pct !== undefined ? (
+                      <TableMetric
+                        value={`${server.cpu_pct.toFixed(1)}%`}
+                        percent={server.cpu_pct}
+                        sub={cpuCoresLabel(server)}
+                      />
+                    ) : (
+                      dash
+                    )}
+                  </td>
+                  <td className="table-col-metric">
+                    {server.online && hasMem ? (
+                      <TableMetric
+                        value={`${pct(server.mem_used, server.mem_total).toFixed(1)}%`}
+                        percent={pct(server.mem_used, server.mem_total)}
+                        sub={formatCapacity(
+                          server.mem_used ?? 0,
+                          server.mem_total ?? 0,
+                        )}
+                      />
+                    ) : (
+                      dash
+                    )}
+                  </td>
+                  <td className="table-col-metric">
+                    {server.online && hasDisk ? (
+                      <TableMetric
+                        value={`${pct(server.disk_used, server.disk_total).toFixed(1)}%`}
+                        percent={pct(server.disk_used, server.disk_total)}
+                        sub={formatCapacity(
+                          server.disk_used ?? 0,
+                          server.disk_total ?? 0,
+                        )}
+                      />
+                    ) : (
+                      dash
+                    )}
+                  </td>
+                  <td className="table-col-traffic">
+                    <TableTraffic server={server} />
                   </td>
                   <td>
-                    <TableResources server={server} />
-                  </td>
-                  <td>
-                    <span className="table-speed">
-                      <span aria-label={`上传 ${speed(server.upload_speed)}`}>
-                        <ArrowUp size={14} aria-hidden="true" />
-                        <small>上传</small>
-                        {speed(server.upload_speed)}
+                    {server.online ? (
+                      <span className="table-speed">
+                        <span className="download">
+                          ↓ {speed(server.download_speed)}
+                        </span>
+                        <span className="upload">
+                          ↑ {speed(server.upload_speed)}
+                        </span>
                       </span>
-                      <span aria-label={`下载 ${speed(server.download_speed)}`}>
-                        <ArrowDown size={14} aria-hidden="true" />
-                        <small>下载</small>
-                        {speed(server.download_speed)}
+                    ) : (
+                      dash
+                    )}
+                  </td>
+                  <td>
+                    {currentBoot.uplink !== undefined ||
+                    currentBoot.downlink !== undefined ? (
+                      <span className="table-cumulative">
+                        <span>↓ {bytes(currentBoot.downlink, false)}</span>
+                        <span>↑ {bytes(currentBoot.uplink, false)}</span>
                       </span>
-                    </span>
+                    ) : (
+                      dash
+                    )}
+                  </td>
+                  <td className="table-col-ping">
+                    <TablePing
+                      ping={server.ping}
+                      serverIndex={index}
+                      triISP={triISP}
+                    />
                   </td>
                   <td>
-                    <TableBootTraffic server={server} />
-                  </td>
-                  <td>
-                    <TablePing ping={server.ping} serverIndex={index} />
-                  </td>
-                  <td className="table-routes">
                     {server.return_routes?.length ? (
-                      <ReturnRouteBadges
+                      <TableReturnRoutes
                         routes={server.return_routes}
                         telecomPaidPeer={server.telecom_paid_peer}
                       />
                     ) : (
-                      <span className="dash">—</span>
+                      dash
                     )}
                   </td>
                 </tr>
@@ -3488,7 +3610,7 @@ export function App() {
                 </section>
               ))
             ) : (
-              <ServerTable servers={visible.map(({ server }) => server)} />
+              <ServerTable items={visible} triISP={data?.tri_isp} />
             )
           ) : (
             <div className="empty">
