@@ -65,6 +65,7 @@ import {
 import { BlackGoldGlobe, type PremiumProbeRegion } from "./BlackGoldGlobe";
 import { ThemeSwitch } from "./ThemeSwitch";
 import { PasskeyLogin } from "./PasskeyLogin";
+import { ProviderLogo, providerLogoSrc } from "./ProviderLogo";
 import "./premium-probe.css";
 
 type ProbeData = ProbePayload;
@@ -2649,7 +2650,17 @@ function PremiumServerCard({
             {health.score} · {health.label}
           </span>
         )}
-        <span className="premium-probe-server-status">
+        <ProviderLogo
+          path={server.provider_logo}
+          name={server.provider_name}
+          url={server.provider_url}
+          style={{ marginLeft: "auto" }}
+        />
+        {/* 状态本身靠 margin-left:auto 顶到右边;有 logo 时由 logo 顶,两个都 auto 会把 logo 挤到中间 */}
+        <span
+          className="premium-probe-server-status"
+          style={providerLogoSrc(server.provider_logo) ? { marginLeft: 0 } : undefined}
+        >
           <i
             className={cn(
               "premium-probe-live-dot",

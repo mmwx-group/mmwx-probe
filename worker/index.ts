@@ -122,6 +122,28 @@ export default {
       return proxyAuth(request, incoming, env);
     }
 
+    // 服务商 logo:转发主控缓存的图片。公开且不敏感,不带 PROBE_TOKEN;
+    // 文件名带内容哈希(换图即换名),可以长期缓存。只认这种文件名,别的路径不转发。
+    const logo = incoming.pathname.match(
+      /^\/api\/provider-logo\/([0-9]{1,10}\.[0-9a-f]{6,64}\.png)$/,
+    );
+    if (logo) {
+      if (request.method !== "GET" && request.method !== "HEAD")
+        return new Response("Method not allowed", { status: 405 });
+      const origin = new URL(env.MMWX_ORIGIN);
+      origin.pathname = "/api/public/provider-logo/" + logo[1];
+      origin.search = "";
+      const upstream = await fetch(origin.toString(), {
+        cf: { cacheEverything: true, cacheTtl: 31536000 },
+      });
+      if (!upstream.ok) return new Response("Not found", { status: 404 });
+      const headers = new Headers();
+      headers.set("Content-Type", "image/png");
+      headers.set("Cache-Control", "public, max-age=31536000, immutable");
+      headers.set("X-Content-Type-Options", "nosniff");
+      return new Response(upstream.body, { status: 200, headers });
+    }
+
     const target = upstreamURL(request, env);
     if (!target) return env.ASSETS.fetch(request);
     if (request.method !== "GET")

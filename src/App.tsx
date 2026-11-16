@@ -140,6 +140,7 @@ import {
   type TrafficRange,
 } from "./traffic-display";
 import commonRouteAnimation from "./assets/return-route/common.json";
+import { ProviderLogo, providerLogoSrc } from "./ProviderLogo";
 import premiumRouteAnimation from "./assets/return-route/premium.json";
 import {
   effectiveProbeLineKey,
@@ -1823,6 +1824,11 @@ function ServerCard({
         server.online && hasMetric && <em className="health-badge ok">健康</em>
       )}
       <i className="server-title-gap" />
+      <ProviderLogo
+        path={server.provider_logo}
+        name={server.provider_name}
+        url={server.provider_url}
+      />
       {!!server.unlocks?.length && <UnlockHoverIcon unlocks={server.unlocks} />}
       <span title={systemTitle(server)}>
         <SystemIcon server={server} />
@@ -2366,6 +2372,10 @@ function ServerTable({
           </thead>
           <tbody>
             {items.map(({ server, index }) => {
+              // 有别的服务器带 logo 时,没 logo 的留同宽空位,名称对齐
+              const anyProviderLogo = items.some(
+                (it) => !!providerLogoSrc(it.server.provider_logo),
+              );
               const name = (
                 <Twemoji>
                   {displayServerName(
@@ -2393,6 +2403,17 @@ function ServerTable({
                         }
                         title={server.online ? "在线" : "离线"}
                       />
+                      {providerLogoSrc(server.provider_logo) ? (
+                        <ProviderLogo
+                          path={server.provider_logo}
+                          name={server.provider_name}
+                          size={15}
+                        />
+                      ) : (
+                        anyProviderLogo && (
+                          <span style={{ width: 15, flexShrink: 0 }} />
+                        )
+                      )}
                       <span className="table-name-text">
                         {server.provider_url ? (
                           <a

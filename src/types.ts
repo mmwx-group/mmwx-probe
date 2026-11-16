@@ -101,6 +101,8 @@ export interface ProbeServer {
   renewal_currency?: string;
   provider_name?: string;
   provider_url?: string;
+  /** 服务商 logo(主控缓存地址);探针设置关了「服务商 logo」时不下发 */
+  provider_logo?: string;
   telecom_paid_peer?: boolean;
   return_routes?: ProbeReturnRoute[];
   unlocks?: ProbeUnlock[];
