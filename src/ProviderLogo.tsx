@@ -2,7 +2,7 @@
 //
 // 主控下发的是它自己的缓存地址 /api/public/provider-logo/{文件名};外置探针与主控不同源,
 // 由 Worker 的 /api/provider-logo/{文件名} 转发(见 worker/index.ts)。
-// 许可证服务给的是透明 PNG:垫白底加细边,深色主题下深色 logo 也看得清。
+// 许可证服务给的是透明 PNG:垫白底(不加边框),深色主题下深色 logo 也看得清。
 // 外置探针没有 Tailwind,样式写成内联。
 import type { CSSProperties } from "react";
 
@@ -46,10 +46,8 @@ export function ProviderLogo({
         height: size,
         flexShrink: 0,
         borderRadius: 4,
-        border: "1px solid rgba(127, 127, 127, 0.35)",
         background: "#fff",
         objectFit: "contain",
-        padding: 1,
         boxSizing: "border-box",
       }}
     />

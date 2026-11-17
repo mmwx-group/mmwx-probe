@@ -2407,11 +2407,11 @@ function ServerTable({
                         <ProviderLogo
                           path={server.provider_logo}
                           name={server.provider_name}
-                          size={15}
+                          size={18}
                         />
                       ) : (
                         anyProviderLogo && (
-                          <span style={{ width: 15, flexShrink: 0 }} />
+                          <span style={{ width: 18, flexShrink: 0 }} />
                         )
                       )}
                       <span className="table-name-text">
