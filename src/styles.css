@@ -1806,9 +1806,9 @@ footer a:hover {
 :root.dark .ping-head strong {
   color: #f8fafc;
 }
-/* 服务商 logo:浅色透明显示,深色垫白底(与主控内置探针一致) */
-:root.dark .provider-logo-img {
-  background: #fff;
+/* 服务商 logo:深色 logo(黑字之类)在深色主题下反色显示,判断见 ProviderLogo.tsx */
+:root.dark .provider-logo-invert {
+  filter: invert(1) hue-rotate(180deg);
 }
 :root.theme-anime .ping-blocks i {
   background: #f6f2fc;
