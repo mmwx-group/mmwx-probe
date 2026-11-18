@@ -1806,6 +1806,10 @@ footer a:hover {
 :root.dark .ping-head strong {
   color: #f8fafc;
 }
+/* 服务商 logo:浅色透明显示,深色垫白底(与主控内置探针一致) */
+:root.dark .provider-logo-img {
+  background: #fff;
+}
 :root.theme-anime .ping-blocks i {
   background: #f6f2fc;
 }
