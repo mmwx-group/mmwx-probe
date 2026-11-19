@@ -3047,6 +3047,14 @@ footer a:hover {
 :root.theme-glass .globe-card {
   position: relative;
 }
+/* 工具条只在 ≥1024px 才 sticky,手机上是 static:玻璃底那层 ::before(absolute + inset 0)
+   找不到它当包含块,会以整页为基准铺开、从页面顶端一直盖到工具条,把上面的汇总糊成一片空白。
+   桌面保留 sticky,这里只补手机 / 平板。 */
+@media (max-width: 1023px) {
+  :root.theme-glass .probe-toolbar {
+    position: relative;
+  }
+}
 :root.theme-glass .kpi-grid.six::before,
 :root.theme-glass .kpi-grid.three > .kpi::before,
 :root.theme-glass .globe-mini::before,
