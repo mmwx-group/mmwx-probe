@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ProbeAppearance, ProbePayload, ThemeName } from "./types";
 import { applyProbeDocumentBranding } from "./document-branding";
 import { normalizeColorMode, type ProbeColorMode } from "./theme-preference";
+import { POLL_INTERVAL_MS, reconnectDelay, shouldPoll } from "./probe-poll";
 
 const APPEARANCE_CACHE = "mmwx-probe-appearance";
 const COLOR_MODE_PREFERENCE = "mmwx-probe-color-mode";
@@ -75,6 +76,9 @@ export function useProbe(): { data?: ProbePayload; error?: string } {
   useEffect(() => {
     let stopped = false;
     let ws: WebSocket | undefined;
+    let lastFrameAt = 0;
+    let reconnectAttempt = 0;
+    let reconnectTimer: number | undefined;
 
     const accept = (payload: ProbePayload) => {
       if (stopped) return;
@@ -84,6 +88,8 @@ export function useProbe(): { data?: ProbePayload; error?: string } {
       applyProbeDocumentBranding(payload.title, payload.icon);
     };
     const poll = async () => {
+      // WebSocket 正常推送时不重复拉,页面在后台时也不拉(见 probe-poll.ts)。
+      if (!shouldPoll(Date.now(), lastFrameAt, document.hidden)) return;
       try {
         const response = await fetch("/api/probe", { cache: "no-store" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -96,32 +102,57 @@ export function useProbe(): { data?: ProbePayload; error?: string } {
     const startPolling = () => {
       if (timer.current) return;
       void poll();
-      timer.current = window.setInterval(poll, 5000);
+      timer.current = window.setInterval(poll, POLL_INTERVAL_MS);
+    };
+    const connect = () => {
+      reconnectTimer = undefined;
+      if (stopped || ws) return;
+      try {
+        const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+        const socket = new WebSocket(`${protocol}//${location.host}/api/stream`);
+        ws = socket;
+        socket.onmessage = (event) => {
+          try {
+            accept(JSON.parse(event.data) as ProbePayload);
+            lastFrameAt = Date.now();
+            reconnectAttempt = 0;
+          } catch {
+            /* wait for next frame */
+          }
+        };
+        // 断开后重连。以前断一次就只剩轮询,要刷新页面才会恢复实时推送。
+        socket.onclose = () => {
+          if (ws === socket) ws = undefined;
+          if (stopped || document.hidden) return;
+          reconnectTimer = window.setTimeout(
+            connect,
+            reconnectDelay(reconnectAttempt++),
+          );
+        };
+      } catch {
+        /* 轮询兜底 */
+      }
+    };
+    // 回到前台:后台期间没拉过,立刻补一次;WebSocket 断了就马上重连。
+    const onVisible = () => {
+      if (document.hidden || stopped) return;
+      void poll();
+      if (!ws && !reconnectTimer) connect();
     };
 
     applyAppearance();
     // Keep polling as a fallback even when the WebSocket handshake succeeds.
     // Some proxies leave an idle WebSocket open without forwarding later frames,
     // which otherwise freezes realtime speed at the first snapshot.
+    // 轮询定时器一直开着,但只有 WebSocket 超过 STREAM_FRESH_MS 没来帧时才真的发请求。
     startPolling();
-    try {
-      const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-      ws = new WebSocket(`${protocol}//${location.host}/api/stream`);
-      ws.onmessage = (event) => {
-        try {
-          accept(JSON.parse(event.data) as ProbePayload);
-        } catch {
-          /* wait for next frame */
-        }
-      };
-      ws.onerror = startPolling;
-      ws.onclose = startPolling;
-    } catch {
-      startPolling();
-    }
+    connect();
+    document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       stopped = true;
+      document.removeEventListener("visibilitychange", onVisible);
+      if (reconnectTimer) window.clearTimeout(reconnectTimer);
       ws?.close();
       if (timer.current) window.clearInterval(timer.current);
       timer.current = undefined;
