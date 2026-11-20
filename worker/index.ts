@@ -133,10 +133,20 @@ export default {
       const origin = new URL(env.MMWX_ORIGIN);
       origin.pathname = "/api/public/provider-logo/" + logo[1];
       origin.search = "";
+      // 只长期缓存成功的响应:cacheTtl 是不看响应、一律按这个时间缓存,没有按状态码区分,
+      // 主控临时失败(限流、重启、还没取到图)时的 4xx / 5xx 不该跟着缓存一年。
+      // 失败的响应带 no-store,浏览器下次打开页面会重新取。
       const upstream = await fetch(origin.toString(), {
-        cf: { cacheEverything: true, cacheTtl: 31536000 },
+        cf: {
+          cacheEverything: true,
+          cacheTtlByStatus: { "200-299": 31536000, "300-599": 0 },
+        },
       });
-      if (!upstream.ok) return new Response("Not found", { status: 404 });
+      if (!upstream.ok)
+        return new Response("Not found", {
+          status: 404,
+          headers: { "Cache-Control": "no-store" },
+        });
       const headers = new Headers();
       headers.set("Content-Type", "image/png");
       headers.set("Cache-Control", "public, max-age=31536000, immutable");
