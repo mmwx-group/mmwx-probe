@@ -104,6 +104,11 @@ export function ProviderLogo({
       width={size}
       height={size}
       className={darkLogo ? "provider-logo-invert" : undefined}
+      // 图片取不到(主控临时失败)时整个收起,不留裂图
+      onError={(event) => {
+        const box = event.currentTarget.parentElement;
+        if (box) box.style.display = "none";
+      }}
       style={{
         width: size,
         height: size,

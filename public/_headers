@@ -1,0 +1,17 @@
+# Cloudflare Workers 静态资源响应头(构建时随 public 复制到 dist 根目录,本文件本身不对外提供)。
+# 不配的话所有静态资源都是默认的 Cache-Control: public, max-age=0, must-revalidate,
+# 每次打开页面浏览器都要为每个 JS / CSS / 国旗 SVG 发一次条件请求。
+
+# Vite 生成的文件名带内容哈希,内容变了文件名就变,可以长期缓存。
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# 表情、字体、水印图几乎不变,但文件名不带哈希:缓存 7 天,过期后先用旧的、后台更新。
+/twemoji/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+/fonts/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+/images/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
